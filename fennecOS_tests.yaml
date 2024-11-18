@@ -1,0 +1,131 @@
+pipeline {
+    agent any
+
+    environment {
+        VM_SSH_USER = 'root'
+        VM_SSH_PASSWORD = 'azerty'
+        // Use space-separated IP addresses as a single string
+        VM_SSH_HOSTS = '172.16.5.201 172.16.5.202 172.16.5.203 172.16.5.200'
+    }
+
+    stages {
+        stage('Test wget') {
+            steps {
+                script {
+                    // Split the VM addresses into a list
+                    def hosts = VM_SSH_HOSTS.split(" ")
+                    hosts.each { host ->
+                        echo "Checking if wget is installed on ${host}..."
+                        sh """
+                            sshpass -p ${VM_SSH_PASSWORD} ssh -o StrictHostKeyChecking=no ${VM_SSH_USER}@${host} 'command -v wget || echo "wget is not installed"'
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Run Basic Commands') {
+            steps {
+                script {
+                    def hosts = VM_SSH_HOSTS.split(" ")
+                    hosts.each { host ->
+                        echo "Running basic Linux commands on ${host}..."
+                        sh """
+                            sshpass -p ${VM_SSH_PASSWORD} ssh -o StrictHostKeyChecking=no ${VM_SSH_USER}@${host} '
+                                if [ -d "/etc" ]; then 
+                                    echo "/etc directory exists"; 
+                                else 
+                                    echo "/etc directory does not exist"; 
+                                fi
+                                ls -l /home
+                            '
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Kernel Version Check') {
+            steps {
+                script {
+                    def hosts = VM_SSH_HOSTS.split(" ")
+                    hosts.each { host ->
+                        echo "Checking the kernel version on ${host}..."
+                        sh """
+                            sshpass -p ${VM_SSH_PASSWORD} ssh -o StrictHostKeyChecking=no ${VM_SSH_USER}@${host} 'uname -r'
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Kernel Logs Check') {
+            steps {
+                script {
+                    def hosts = VM_SSH_HOSTS.split(" ")
+                    hosts.each { host ->
+                        echo "Checking kernel logs on ${host}..."
+                        sh """
+                            sshpass -p ${VM_SSH_PASSWORD} ssh -o StrictHostKeyChecking=no ${VM_SSH_USER}@${host} 'dmesg | grep -i "error\\|warn" || echo "No kernel errors or warnings"'
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('CPU Info Check') {
+            steps {
+                script {
+                    def hosts = VM_SSH_HOSTS.split(" ")
+                    hosts.each { host ->
+                        echo "Checking CPU information on ${host}..."
+                        sh """
+                            sshpass -p ${VM_SSH_PASSWORD} ssh -o StrictHostKeyChecking=no ${VM_SSH_USER}@${host} 'cat /proc/cpuinfo'
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Memory Info Check') {
+            steps {
+                script {
+                    def hosts = VM_SSH_HOSTS.split(" ")
+                    hosts.each { host ->
+                        echo "Checking memory information on ${host}..."
+                        sh """
+                            sshpass -p ${VM_SSH_PASSWORD} ssh -o StrictHostKeyChecking=no ${VM_SSH_USER}@${host} 'cat /proc/meminfo'
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Network Connectivity Test') {
+            steps {
+                script {
+                    def hosts = VM_SSH_HOSTS.split(" ")
+                    hosts.each { host ->
+                        echo "Testing network connectivity on ${host}..."
+                        sh """
+                            sshpass -p ${VM_SSH_PASSWORD} ssh -o StrictHostKeyChecking=no ${VM_SSH_USER}@${host} 'ping -c 4 8.8.8.8 || echo "Network connectivity test failed"'
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished'
+        }
+        success {
+            echo 'All tests passed!'
+        }
+        failure {
+            echo 'Some tests failed.'
+        }
+    }
+}
+
