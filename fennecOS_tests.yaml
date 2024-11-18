@@ -5,7 +5,7 @@ pipeline {
         VM_SSH_USER = 'root'
         VM_SSH_PASSWORD = 'azerty'
         // Use space-separated IP addresses as a single string
-        VM_SSH_HOSTS = '172.16.5.201 172.16.5.202 172.16.5.203 172.16.5.200'
+        VM_SSH_HOSTS = '172.16.5.201 172.16.5.202 172.16.5.203 172.16.5.200 172.16.5.199'
     }
 
     stages {
@@ -128,4 +128,3 @@ pipeline {
         }
     }
 }
-
